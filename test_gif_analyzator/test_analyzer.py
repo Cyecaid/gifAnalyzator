@@ -36,29 +36,25 @@ def test_open_file(monkeypatch):
     app.open_file()
     app.load_gif.assert_called_with(mock_file)
 
+
 def test_load_gif(mock_gif_parser):
     app = GifAnalyzer()
 
-    # Mock tkinter canvas
     app.canvas = MagicMock()
 
-    # Create a real Pillow image to use as a mock frame
     mock_image = Image.new("RGBA", (16, 16), (255, 0, 0, 255))  # A red 16x16 image
     mock_sequence = [mock_image]
 
-    # Mock ImageTk.PhotoImage to prevent TclError
     with patch('PIL.Image.open', return_value=mock_image), \
          patch('PIL.ImageSequence.Iterator', return_value=mock_sequence), \
          patch('PIL.ImageTk.PhotoImage', return_value=MagicMock()):
 
         app.load_gif("/path/to/test.gif")
 
-    # Assertions
     assert len(app.frames) == 1
     assert app.total_frames == 1
     assert app.current_frame_index == 0
 
-    # Verify that the frame was drawn
     app.canvas.create_image.assert_called()
     app.update_current_frame()
     app.canvas.create_image.assert_called_with(
@@ -78,7 +74,6 @@ def test_toggle_animation():
     app.stop_animation = MagicMock()
     app.start_animation = MagicMock()
 
-    # Test start animation
     app.toggle_animation()
     assert app.animation_running is False
 
@@ -94,3 +89,34 @@ def test_zoom_in(monkeypatch):
     app.zoom_in()
     assert app.zoom_factor == 2
     app.reload_frames.assert_called_once()
+
+
+def test_copy_result(monkeypatch):
+    app = GifAnalyzer()
+
+    test_result = "Test Analysis Result"
+    app.get_formatted_result = MagicMock(return_value=test_result)
+
+    app.clipboard_clear = MagicMock()
+    app.clipboard_append = MagicMock()
+
+    app.copy_result()
+
+    app.clipboard_clear.assert_called_once()
+    app.clipboard_append.assert_called_once_with(test_result)
+
+
+def test_save_result(monkeypatch):
+    app = GifAnalyzer()
+
+    test_result = "Test Analysis Result"
+    app.get_formatted_result = MagicMock(return_value=test_result)
+
+    test_file_path = "/path/to/analysis.txt"
+    monkeypatch.setattr('tkinter.filedialog.asksaveasfilename', lambda **kwargs: test_file_path)
+
+    mock_open = patch("builtins.open", MagicMock())
+    with mock_open as mocked_file:
+        app.save_result()
+
+    mocked_file.assert_called_once_with(test_file_path, "w", encoding="utf-8")
