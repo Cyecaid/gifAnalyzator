@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import filedialog
-from PIL import Image, ImageTk
+import tkinter as tk
+from PIL import Image, ImageTk, ImageSequence
 from gif_parser import GifParser
 from pathlib import Path
 
@@ -8,7 +9,7 @@ from pathlib import Path
 class GifAnalyzer(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("GIF Analyzer")
+        self.title("GIF Analyzer with Pillow Checkerboard")
         self.geometry("800x600")
         self.resizable(False, False)
 
@@ -60,7 +61,7 @@ class GifAnalyzer(ctk.CTk):
 
         self.prev_frame_btn = ctk.CTkButton(
             self.controls_left,
-            text="◁",
+            text="\u25C1",
             width=30,
             command=self.prev_frame
         )
@@ -76,7 +77,7 @@ class GifAnalyzer(ctk.CTk):
 
         self.next_frame_btn = ctk.CTkButton(
             self.controls_left,
-            text="▷",
+            text="\u25B7",
             width=30,
             command=self.next_frame
         )
@@ -92,7 +93,7 @@ class GifAnalyzer(ctk.CTk):
         self.speed_label.pack(side="left", padx=2)
 
         self.speed_options = ["0.25x", "0.5x", "1x", "2x", "4x"]
-        self.speed_var = ctk.StringVar(value="1x")
+        self.speed_var = tk.StringVar(value="1x")
         self.speed_menu = ctk.CTkOptionMenu(
             self.controls_right,
             values=self.speed_options,
@@ -102,8 +103,8 @@ class GifAnalyzer(ctk.CTk):
         )
         self.speed_menu.pack(side="left", padx=2)
 
-        self.canvas = ctk.CTkCanvas(self.main_frame, width=400, height=300, bg='gray85', highlightthickness=0)
-        self.canvas.pack(pady=10)
+        self.canvas = tk.Canvas(self.main_frame, width=400, height=300, bg="white", highlightthickness=0)
+        self.canvas.pack(pady=10, fill="both", expand=True)
 
         self.info_text = ctk.CTkTextbox(self.main_frame, height=200)
         self.info_text.pack(fill="x", padx=5, pady=(5, 0))
@@ -127,25 +128,37 @@ class GifAnalyzer(ctk.CTk):
         )
         self.save_button.pack(side="right", padx=5)
 
-        self.current_image = None
         self.frames = []
-        self.original_frames = []
+        self.photo_frames = []
         self.current_frame_index = 0
         self.total_frames = 0
         self.animation_speed = 100
-        self.zoom_level = 1.0
-        self.max_zoom = 32.0
-        self.min_zoom = 0.1
-        self.pan_start_x = 0
-        self.pan_start_y = 0
-        self.image_x = 0
-        self.image_y = 0
         self.animation_running = False
         self.current_file = None
 
-        self.canvas.bind("<ButtonPress-1>", self.start_pan)
-        self.canvas.bind("<B1-Motion>", self.pan)
-        self.canvas.bind("<MouseWheel>", self.mouse_wheel)
+        self.zoom_factor = 1
+        self.max_zoom = 8
+        self.min_zoom = 1
+
+        self.canvas.bind("<Configure>", self.on_canvas_resize)
+
+    def on_canvas_resize(self, event):
+        self.update_current_frame()
+
+    def draw_checkerboard_with_pillow(self, frame_image, cell_size=20):
+        frame_width, frame_height = frame_image.size
+
+        checkerboard = Image.new("RGBA", (frame_width, frame_height), (255, 255, 255, 0))
+        for x in range(0, frame_width, cell_size):
+            for y in range(0, frame_height, cell_size):
+                if (x // cell_size + y // cell_size) % 2 == 0:
+                    for dx in range(cell_size):
+                        for dy in range(cell_size):
+                            if x + dx < frame_width and y + dy < frame_height:
+                                checkerboard.putpixel((x + dx, y + dy), (192, 192, 192, 255))
+
+        checkerboard.paste(frame_image, (0, 0), frame_image)
+        return checkerboard
 
     def update_frame_counter(self):
         self.frame_label.configure(text=f"Frame: {self.current_frame_index + 1}/{self.total_frames}")
@@ -174,73 +187,123 @@ class GifAnalyzer(ctk.CTk):
             self.start_animation()
             self.play_pause_btn.configure(text="STOP")
 
+    def stop_animation(self):
+        self.animation_running = False
+
+    def start_animation(self):
+        self.animation_running = True
+        self.play_pause_btn.configure(text="STOP")
+        self.animate_gif()
+
+    def animate_gif(self):
+        if not self.animation_running or not self.frames:
+            return
+        self.current_frame_index = (self.current_frame_index + 1) % self.total_frames
+        self.update_current_frame()
+        self.after(self.animation_speed, self.animate_gif)
+
     def update_current_frame(self):
         if self.frames:
             self.canvas.delete("gif")
-            self.canvas.create_image(200, 150, image=self.frames[self.current_frame_index], anchor="center", tags="gif")
+
+            frame_image = self.frames[self.current_frame_index]
+
+            self.checkerboard_image = ImageTk.PhotoImage(frame_image)
+
+            w = self.canvas.winfo_width() // 2
+            h = self.canvas.winfo_height() // 2
+            self.canvas.create_image(w, h, image=self.checkerboard_image, anchor="center", tags="gif")
             self.update_frame_counter()
 
-    def mouse_wheel(self, event):
-        if not self.frames:
-            return
-
-        if event.delta > 0:
-            self.zoom_level = min(32.0, self.zoom_level * 1.1)
-        else:
-            self.zoom_level = max(0.1, self.zoom_level / 1.1)
-
-        self.update_frames_zoom()
-
-    def start_pan(self, event):
-        self.canvas.scan_mark(event.x, event.y)
-        self.pan_start_x = event.x
-        self.pan_start_y = event.y
-
-    def pan(self, event):
-        self.canvas.scan_dragto(event.x, event.y, gain=1)
-
-    def create_checkerboard(self, width, height, cell_size=10):
-        image = Image.new('RGB', (width, height), 'white')
-        pixels = image.load()
-
-        for i in range(0, width, cell_size):
-            for j in range(0, height, cell_size):
-                if (i // cell_size + j // cell_size) % 2:
-                    for x in range(i, min(i + cell_size, width)):
-                        for y in range(j, min(j + cell_size, height)):
-                            pixels[x, y] = (192, 192, 192)
-        return image
-
-    def resize_image(self, image, zoom=1.0):
-        width, height = image.size
-        new_width = int(width * zoom)
-        new_height = int(height * zoom)
-        return image.resize((new_width, new_height), Image.Resampling.NEAREST if zoom > 1 else Image.Resampling.LANCZOS)
+    def change_speed(self, value):
+        speed_multiplier = {
+            "0.25x": 4.0,
+            "0.5x": 2.0,
+            "1x": 1.0,
+            "2x": 0.5,
+            "4x": 0.25
+        }
+        self.animation_speed = int(100 * speed_multiplier[value])
 
     def zoom_in(self):
-        if self.zoom_level < self.max_zoom:
-            self.zoom_level = min(self.max_zoom, self.zoom_level * 1.5)
-            self.update_frames_zoom()
+        if self.zoom_factor < self.max_zoom:
+            self.zoom_factor *= 2
+            self.reload_frames()
 
     def zoom_out(self):
-        if self.zoom_level > self.min_zoom:
-            self.zoom_level = max(self.min_zoom, self.zoom_level / 1.5)
-            self.update_frames_zoom()
+        if self.zoom_factor > self.min_zoom:
+            self.zoom_factor //= 2
+            self.reload_frames()
 
     def reset_zoom(self):
         if not self.frames:
             return
-        self.zoom_level = 1.0
-        self.canvas.xview_moveto(0)
-        self.canvas.yview_moveto(0)
-        self.update_frames_zoom()
+        self.zoom_factor = 1
+        self.reload_frames()
 
-    def update_frames_zoom(self):
-        self.frames.clear()
-        for original in self.original_frames:
-            resized = self.resize_image(original, self.zoom_level)
-            self.frames.append(ImageTk.PhotoImage(resized))
-        self.update_current_frame()
+    def reload_frames(self):
+        if not self.current_file:
+            return
+
+        self.load_gif(self.current_file)
+
+    def open_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("GIF files", "*.gif")])
+        if file_path:
+            self.load_gif(file_path)
+
+    def load_gif(self, file_path):
+        self.stop_animation()
+        self.play_pause_btn.configure(text="PLAY")
+        self.frames = []
+        self.photo_frames = []
+        self.current_frame_index = 0
+        self.animation_running = False
+        self.current_file = file_path
+        self.zoom_factor = 1
+
+        base_image = None
+        gif = Image.open(file_path)
+        for frame in ImageSequence.Iterator(gif):
+            frame = frame.convert("RGBA")
+            if base_image is None:
+                base_image = Image.new("RGBA", gif.size)
+            base_image.paste(frame, (0, 0), frame)
+            checkerboard_frame = self.draw_checkerboard_with_pillow(base_image)
+            self.frames.append(checkerboard_frame)
+
+        self.total_frames = len(self.frames)
+        self.update_frame_counter()
+        if self.frames:
+            self.update_current_frame()
+
+        self.analyze_current_file()
+
+    def analyze_current_file(self):
+        if not hasattr(self, 'current_file') or not self.current_file:
+            print("No file loaded to analyze")
+            return
+
+        try:
+            parser = GifParser(Path(self.current_file))
+            self.gif_info = parser.parse_file()
+
+            self.info_text.configure(state="normal")
+            self.info_text.delete("1.0", "end")
+
+            self.info_text.insert("end", "=== GIF Information ===\n")
+            self.info_text.insert("end", self.format_table(self.gif_info['headers']))
+
+            self.info_text.insert("end", "\n\n=== Frame Information ===")
+            for i, frame in enumerate(self.gif_info['frames']):
+                self.info_text.insert("end", f"\nFrame {i + 1}:")
+                for key, value in frame.items():
+                    self.info_text.insert("end", f"\n{key}: {value}")
+
+            self.info_text.configure(state="disabled")
+
+        except Exception as e:
+            print(f"Error analyzing GIF: {str(e)}")
 
     def get_formatted_result(self):
         if not hasattr(self, 'gif_info'):
@@ -270,104 +333,6 @@ class GifAnalyzer(ctk.CTk):
                 result.append(f"{key}: {value} ({description})")
         return "\n".join(result)
 
-    def open_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("GIF files", "*.gif")])
-        if file_path:
-            self.load_gif(file_path)
-
-    def load_gif(self, file_path):
-        try:
-            self.frames = []
-            self.original_frames = []
-            self.current_frame_index = 0
-            self.animation_running = False
-            self.play_pause_btn.configure(text="PLAY")
-
-            self.image = Image.open(file_path)
-            self.current_file = str(file_path)
-
-            try:
-                while True:
-                    frame_copy = self.image.copy()
-                    if frame_copy.mode == 'P':
-                        frame_copy = frame_copy.convert('RGBA')
-
-                    checker = self.create_checkerboard(frame_copy.width, frame_copy.height)
-
-                    if frame_copy.mode == 'RGBA':
-                        checker.paste(frame_copy, mask=frame_copy.split()[3])
-                    else:
-                        checker.paste(frame_copy)
-
-                    self.original_frames.append(checker)
-                    self.frames.append(ImageTk.PhotoImage(checker))
-                    self.image.seek(self.image.tell() + 1)
-            except EOFError:
-                pass
-
-            self.total_frames = len(self.frames)
-            self.update_frame_counter()
-
-            if self.frames:
-                self.update_current_frame()
-
-            self.analyze_current_file()
-
-        except Exception as e:
-            print(f"Error loading GIF: {str(e)}")
-
-    def analyze_current_file(self):
-        if not hasattr(self, 'current_file') or not self.current_file:
-            print("No file loaded to analyze")
-            return
-
-        try:
-            parser = GifParser(Path(self.current_file))
-            self.gif_info = parser.parse_file()
-
-            self.info_text.configure(state="normal")
-            self.info_text.delete("1.0", "end")
-
-            self.info_text.insert("end", "=== GIF Information ===\n")
-            self.info_text.insert("end", self.format_table(self.gif_info['headers']))
-
-            self.info_text.insert("end", "\n\n=== Frame Information ===")
-            for i, frame in enumerate(self.gif_info['frames']):
-                self.info_text.insert("end", f"\nFrame {i + 1}:")
-                for key, value in frame.items():
-                    self.info_text.insert("end", f"\n{key}: {value}")
-
-            self.info_text.configure(state="disabled")
-
-        except Exception as e:
-            print(f"Error analyzing GIF: {str(e)}")
-
-    def stop_animation(self):
-        self.animation_running = False
-
-    def start_animation(self):
-        self.animation_running = True
-        self.play_pause_btn.configure(text="STOP")
-        self.animate_gif()
-
-    def animate_gif(self):
-        if not self.animation_running or not self.frames:
-            return
-
-        self.current_frame_index = (self.current_frame_index + 1) % self.total_frames
-        self.update_current_frame()
-        self.after(self.animation_speed, self.animate_gif)
-
-    def change_speed(self, value):
-        speed_multiplier = {
-            "0.25x": 4.0,
-            "0.5x": 2.0,
-            "1x": 1.0,
-            "2x": 0.5,
-            "4x": 0.25
-        }
-        self.animation_speed = int(100 * speed_multiplier[value])
-
     def copy_result(self):
         result = self.get_formatted_result()
         if result:
@@ -375,21 +340,20 @@ class GifAnalyzer(ctk.CTk):
             self.clipboard_append(result)
 
     def save_result(self):
-        if not hasattr(self, 'gif_info'):
+        result = self.get_formatted_result()
+        if not result.strip():
             return
 
-        original_name = Path(self.current_file).stem if hasattr(self, 'current_file') else "gif"
-        default_name = f"{original_name}_analysis.txt"
-
+        default_name = "analysis.txt"
         file_path = filedialog.asksaveasfilename(
             defaultextension=".txt",
             filetypes=[("Text files", "*.txt")],
             initialfile=default_name
         )
-
         if file_path:
             try:
-                Path(file_path).write_text(self.get_formatted_result(), encoding='utf-8')
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(result)
             except Exception as e:
                 print(f"Error saving file: {str(e)}")
 
