@@ -28,10 +28,3 @@ class GifLogicalScreenDescriptor:
                 f"  Размер общей таблицы цветов: {self.global_color_table_size}\n"
                 f"  Индекс цвета фона: {self.bg_color_index}\n"
                 f"  Соотношение сторон: {self.pixel_aspect_ratio}")
-
-    def __eq__(self, other):
-        return (self.width == other.width and
-                self.height == other.height and
-                self.packed == other.packed and
-                self.bg_color_index == other.bg_color_index and
-                self.pixel_aspect_ratio == other.pixel_aspect_ratio)

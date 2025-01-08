@@ -1,10 +1,9 @@
 import logging
 import os
+import struct
 
-from GifStructs.GifExtensions.application_extension import GifApplicationExtension
-from GifStructs.GifExtensions.comment_extension import GifCommentExtension
-from GifStructs.GifExtensions.graphic_control_extension import GifGraphicControlExtension
-from GifStructs.GifExtensions.plain_text_extension import GifPlainTextExtension
+from GifStructs.extensions import (GifApplicationExtension, GifCommentExtension, GifGraphicControlExtension,
+                                   GifPlainTextExtension)
 from GifStructs.gif_frame import GifFrame
 from GifStructs.image_descriptor import GifImageDescriptor
 from GifStructs.logical_screen_descriptor import GifLogicalScreenDescriptor
@@ -23,9 +22,6 @@ class GifParser:
         self.frames = []
 
     def parse(self):
-        """
-        Парсинг GIF файла.
-        """
         if not os.path.exists(self.filename):
             logging.error(f"Файл {self.filename} не найден.")
             return
@@ -41,40 +37,31 @@ class GifParser:
 
     @staticmethod
     def parse_header(header_data):
-        """
-        Парсинг заголовка GIF файла.
-        :param header_data: Заголовок файла в байтовом формате.
-        :return: Заголовок GIF файла.
-        """
-        signature = header_data[0:3].decode('ascii', errors='replace')
-        version = header_data[3:6].decode('ascii', errors='replace')
+        if len(header_data) != 6:
+            logging.error("Invalid header size")
+            return None
+
+        signature, version = struct.unpack("3s3s", header_data)
+        signature = signature.decode('ascii', errors='replace')
+        version = version.decode('ascii', errors='replace')
 
         if signature != 'GIF':
-            logging.error(f"Неверный формат файла!")
+            logging.error("Invalid file format")
             return None
 
         return GifHeader(signature, version)
 
     @staticmethod
     def parse_logical_screen_descriptor(log_desc_data):
-        """
-        Парсинг дескриптора экрана.
-        :param log_desc_data: Данные дескриптора экрана в байтовом формате.
-        :return: Логический дескриптор экрана.
-        """
-        width = log_desc_data[0] + 256 * log_desc_data[1]
-        height = log_desc_data[2] + 256 * log_desc_data[3]
-        packed, bg_color_index, aspect = log_desc_data[4], log_desc_data[5], log_desc_data[6]
+        if len(log_desc_data) != 7:
+            logging.error("Invalid logical screen descriptor size")
+            return None
+
+        width, height, packed, bg_color_index, aspect = struct.unpack("<HHBBB", log_desc_data)
         return GifLogicalScreenDescriptor(width, height, packed, bg_color_index, aspect)
 
     @staticmethod
     def parse_global_color_table(logical_screen_descriptor, data):
-        """
-        Парсинг глобальной таблицы цветов.
-        :param logical_screen_descriptor: Логический дескриптор экрана.
-        :param data: Данные таблицы цветов в байтовом формате.
-        :return: Глобальная таблица цветов, если есть, иначе None.
-        """
         if logical_screen_descriptor.global_color_table_flag:
             colors = [(data[i], data[i + 1], data[i + 2]) for i in range(0, len(data), 3)]
             return GifGlobalColorTable(colors)
@@ -105,11 +92,6 @@ class GifParser:
 
     @staticmethod
     def parse_extension(f):
-        """
-        Парсинг расширения.
-        :param f: Открытый GIF файл.
-        :return: Расширения, если есть, иначе None.
-        """
         graphic_control_ext = plain_text_ext = application_ext = comment_ext = None
 
         ext_label = f.read(1)[0]
@@ -138,27 +120,16 @@ class GifParser:
 
     @staticmethod
     def parse_image_descriptor(f):
-        """
-        Парсинг дескриптора изображения.
-        :param f: Открытый GIF файл.
-        :return: Дескриптор изображения.
-        """
         img_desc_data = f.read(9)
-        left = img_desc_data[0] + 256 * img_desc_data[1]
-        top = img_desc_data[2] + 256 * img_desc_data[3]
-        width = img_desc_data[4] + 256 * img_desc_data[5]
-        height = img_desc_data[6] + 256 * img_desc_data[7]
-        packed = img_desc_data[8]
+        if len(img_desc_data) != 9:
+            logging.error("Invalid image descriptor size")
+            return None
+
+        left, top, width, height, packed = struct.unpack("<HHHHB", img_desc_data)
         return GifImageDescriptor(left, top, width, height, packed)
 
     @staticmethod
     def parse_local_color_table(f, image_descriptor):
-        """
-        Парсинг локальной таблицы цветов.
-        :param f: Открытый GIF файл.
-        :param image_descriptor: Дескриптор изображения.
-        :return: Локальная таблица цветов, если есть, иначе None.
-        """
         local_ct = None
         if image_descriptor.local_color_table_flag:
             size = image_descriptor.local_color_table_size
@@ -169,11 +140,6 @@ class GifParser:
 
     @staticmethod
     def parse_indices(f):
-        """
-        Парсинг индексов изображения.
-        :param f: Открытый GIF файл.
-        :return: Индексы изображения.
-        """
         lzw_min_code_size = f.read(1)[0]
         img_data_blocks = GifParser.read_sub_blocks(f)
         decompressor = LZWDecompressor(lzw_min_code_size, img_data_blocks)
@@ -181,11 +147,6 @@ class GifParser:
 
     @staticmethod
     def parse_graphic_control_extension(gce_data):
-        """
-        Парсинг расширения управления графикой.
-        :param gce_data: Данные расширения управления графикой в байтовом формате.
-        :return: Расширение управления графикой.
-        """
         packed = gce_data[0]
         disposal_method = (packed & 0x1C) >> 2
         user_input_flag = (packed & 0x02) >> 1
@@ -197,43 +158,24 @@ class GifParser:
 
     @staticmethod
     def parse_plain_text_extension(pte_data, text_data):
-        """
-        Парсинг расширения простого текста.
-        :param pte_data: Данные расширения простого текста в байтовом формате.
-        :param text_data: Данные о тексте в байтовом формате.
-        :return: Расширение простого текста.
-        """
-        left = pte_data[0] + (pte_data[1] << 8)
-        top = pte_data[2] + (pte_data[3] << 8)
-        width = pte_data[4] + (pte_data[5] << 8)
-        height = pte_data[6] + (pte_data[7] << 8)
-        cell_width = pte_data[8]
-        cell_height = pte_data[9]
-        fg_color_index = pte_data[10]
-        bg_color_index = pte_data[11]
+        if len(pte_data) != 12:
+            logging.error("Invalid plain text extension size")
+            return None
+
+        left, top, width, height, cell_width, cell_height, fg_color_index, bg_color_index = struct.unpack("<HHHHBBBB",
+                                                                                                          pte_data)
         text_str = text_data.decode('ascii', errors='replace')
         return GifPlainTextExtension(left, top, width, height, cell_width, cell_height,
-                                      fg_color_index, bg_color_index, text_str)
+                                     fg_color_index, bg_color_index, text_str)
 
     @staticmethod
     def parse_application_extension(app_data, app_sub_blocks):
-        """
-        Парсинг расширения приложения.
-        :param app_data: Идентификатор и код авторизации расширения приложения в байтовом формате.
-        :param app_sub_blocks: Данные расширения приложения в байтовом формате.
-        :return: Расширение приложения.
-        """
         app_identifier = app_data[:8].decode('ascii', errors='replace').strip()
         app_auth_code = app_data[8:].decode('ascii', errors='replace')
         return GifApplicationExtension(app_identifier, app_auth_code, app_sub_blocks)
 
     @staticmethod
     def parse_comment_extension(comment_data):
-        """
-        Парсинг расширения комментария.
-        :param comment_data: Данные расширения комментария в байтовом формате.
-        :return: Расширение комментария.
-        """
         comment_str = comment_data.decode('ascii', errors='replace')
         return GifCommentExtension(comment_str)
 
@@ -250,11 +192,6 @@ class GifParser:
 
     @staticmethod
     def read_sub_blocks(f):
-        """
-        Чтение блока данных.
-        :param f: Открытый GIF файл.
-        :return: Блок данных о составляющей GIF файла.
-        """
         result = bytearray()
         while True:
             block_size_data = f.read(1)
