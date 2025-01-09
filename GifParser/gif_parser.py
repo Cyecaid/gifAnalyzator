@@ -2,9 +2,7 @@ import logging
 import os
 import struct
 
-from GifStructs.frame_extensions import (GifApplicationExtension, GifCommentExtension, GifGraphicControlExtension,
-                                         GifPlainTextExtension)
-from GifStructs.gif_frame import GifFrame
+from GifStructs.gif_frame import GifFrame, GraphicControlExtension, ApplicationExtension, CommentExtension, PlainTextExtension
 from GifStructs.logical_screen_descriptor import GifLogicalScreenDescriptor
 from GifParser.lzw_decompressor import LZWDecompressor
 
@@ -149,7 +147,7 @@ class GifParser:
 
         delay_time = delay_time_low + (delay_time_high << 8)
 
-        return GifGraphicControlExtension(disposal_method, user_input_flag, transparency_flag, delay_time,
+        return GraphicControlExtension(disposal_method, user_input_flag, transparency_flag, delay_time,
                                           transparent_color_index)
 
     @staticmethod
@@ -161,19 +159,19 @@ class GifParser:
         left, top, width, height, cell_width, cell_height, fg_color_index, bg_color_index = struct.unpack("<HHHHBBBB",
                                                                                                           pte_data)
         text_str = text_data.decode('ascii', errors='replace')
-        return GifPlainTextExtension(left, top, width, height, cell_width, cell_height,
+        return PlainTextExtension(left, top, width, height, cell_width, cell_height,
                                      fg_color_index, bg_color_index, text_str)
 
     @staticmethod
     def _parse_application_extension(app_data, app_sub_blocks):
         app_identifier = app_data[:8].decode('ascii', errors='replace').strip()
         app_auth_code = app_data[8:].decode('ascii', errors='replace')
-        return GifApplicationExtension(app_identifier, app_auth_code, app_sub_blocks)
+        return ApplicationExtension(app_identifier, app_auth_code, app_sub_blocks)
 
     @staticmethod
     def _parse_comment_extension(comment_data):
         comment_str = comment_data.decode('ascii', errors='replace')
-        return GifCommentExtension(comment_str)
+        return CommentExtension(comment_str)
 
     @staticmethod
     def _skip_sub_blocks(f):
