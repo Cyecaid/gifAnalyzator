@@ -1,6 +1,7 @@
 import unittest
 
-from GifParser.lzw_decompressor import LZWDecompressor
+from lzw_decompressor import LZWDecompressor
+
 
 class TestLZWDecompressor(unittest.TestCase):
     def test_empty_data(self):

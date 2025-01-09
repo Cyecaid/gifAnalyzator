@@ -1,13 +1,15 @@
-from gif_parser import GifParser
-from gif_frame import GifFrame
 import tkinter as tk
+import customtkinter as ctk
+
+from info_output import print_all_frames_headers, get_descriptor
 
 
 class GifViewer:
-    def __init__(self, root, gif_parser: GifParser):
+    def __init__(self, root, gif_parser):
         self.root = root
         self.gif_parser = gif_parser
         self.current_frame_idx = 0
+        self.is_playing = False
 
         self.width = gif_parser.logical_screen_descriptor.width
         self.height = gif_parser.logical_screen_descriptor.height
@@ -18,14 +20,28 @@ class GifViewer:
         self.base_image = [row.copy() for row in self.checkerboard]
         self.previous_images_stack = []
 
-    def _configure_root_window(self, root):
-        screen_width = root.winfo_screenwidth()
-        screen_height = root.winfo_screenheight()
-        window_width, window_height = self._calculate_window_size(screen_width, screen_height)
-        root.geometry(f"{window_width}x{window_height}")
+    @staticmethod
+    def _configure_root_window(root):
+        default_width, default_height = 800, 600
+        root.geometry(f"{default_width}x{default_height}")
 
     def _create_ui_components(self):
-        frame = tk.Frame(self.root)
+        top_controls_frame = ctk.CTkFrame(self.root)
+        top_controls_frame.pack(fill=tk.X, side=tk.TOP, padx=5, pady=5)
+
+        self.prev_frame_btn = ctk.CTkButton(top_controls_frame, text="Предыдущий кадр", command=self._previous_frame, state=tk.DISABLED)
+        self.prev_frame_btn.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.play_pause_btn = ctk.CTkButton(top_controls_frame, text="Старт", command=self._toggle_play_pause)
+        self.play_pause_btn.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.next_frame_btn = ctk.CTkButton(top_controls_frame, text="Следующий кадр", command=self._next_frame, state=tk.DISABLED)
+        self.next_frame_btn.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.current_frame_label = ctk.CTkLabel(top_controls_frame, text=f"Кадр: {self.current_frame_idx + 1}/{len(self.gif_parser.frames)}")
+        self.current_frame_label.pack(side=tk.LEFT, padx=5, pady=5)
+
+        frame = ctk.CTkFrame(self.root)
         frame.pack(fill=tk.BOTH, expand=True)
 
         frame.rowconfigure(0, weight=1)
@@ -40,6 +56,11 @@ class GifViewer:
         self.image_id = self.canvas.create_image(0, 0, anchor="nw", image=self.photo)
         self.canvas.config(scrollregion=(0, 0, self.width, self.height))
 
+        self.info_textbox = ctk.CTkTextbox(self.root, height=200)
+        self.info_textbox.pack(fill=tk.X, side=tk.BOTTOM, padx=5, pady=5)
+
+        self._populate_info()
+
     def _add_scrollbars(self, frame):
         v_scroll = tk.Scrollbar(frame, orient=tk.VERTICAL, command=self.canvas.yview)
         v_scroll.grid(row=0, column=1, sticky="ns")
@@ -50,6 +71,9 @@ class GifViewer:
         self.canvas.configure(xscrollcommand=h_scroll.set)
 
     def animate_gif(self):
+        if not self.is_playing:
+            return
+
         frame = self.gif_parser.frames[self.current_frame_idx]
         delay = frame.graphic_control_extension.delay_time if frame.graphic_control_extension else 100
 
@@ -57,18 +81,44 @@ class GifViewer:
         self._set_frame_into_image(frame)
         self._update_canvas()
 
+        self.current_frame_label.configure(text=f"Кадр: {self.current_frame_idx + 1}/{len(self.gif_parser.frames)}")
+
         if len(self.gif_parser.frames) > 1:
             if self.current_frame_idx == len(self.gif_parser.frames) - 1:
                 self._clear_canvas(frame)
             self.current_frame_idx = (self.current_frame_idx + 1) % len(self.gif_parser.frames)
             self.root.after(delay, self.animate_gif)
 
-    def _calculate_window_size(self, screen_width, screen_height):
-        scrollbar_width = 21
-        scrollbar_height = 21
-        window_width = min(self.width + scrollbar_width, screen_width)
-        window_height = min(self.height + scrollbar_height, screen_height)
-        return window_width, window_height
+    def _toggle_play_pause(self):
+        self.is_playing = not self.is_playing
+        self.play_pause_btn.configure(text="Пауза" if self.is_playing else "Старт")
+
+        self.prev_frame_btn.configure(state=tk.DISABLED if self.is_playing else tk.NORMAL)
+        self.next_frame_btn.configure(state=tk.DISABLED if self.is_playing else tk.NORMAL)
+        self.current_frame_label.configure(text=f"Кадр: {self.current_frame_idx + 1}/{len(self.gif_parser.frames)}")
+
+        if self.is_playing:
+            self.animate_gif()
+
+    def _previous_frame(self):
+        self.current_frame_idx = (self.current_frame_idx - 1) % len(self.gif_parser.frames)
+        self._update_frame()
+
+    def _next_frame(self):
+        self.current_frame_idx = (self.current_frame_idx + 1) % len(self.gif_parser.frames)
+        self._update_frame()
+
+    def _update_frame(self):
+        frame = self.gif_parser.frames[self.current_frame_idx]
+        self._frame_processing()
+        self._set_frame_into_image(frame)
+        self._update_canvas()
+
+        self.current_frame_label.configure(text=f"Кадр: {self.current_frame_idx + 1}/{len(self.gif_parser.frames)}")
+
+    def _populate_info(self):
+        info = get_descriptor(self.gif_parser) + print_all_frames_headers(self.gif_parser)
+        self.info_textbox.insert("1.0", info)
 
     @staticmethod
     def _create_checkerboard(width, height):
@@ -97,7 +147,7 @@ class GifViewer:
         if disposal == 3:
             self.previous_images_stack.append([row.copy() for row in self.base_image])
 
-    def _clear_canvas(self, frame: GifFrame) -> None:
+    def _clear_canvas(self, frame):
         left, top, width, height = frame.left, frame.top, frame.width, frame.height
         for y in range(top, top + height):
             for x in range(left, left + width):
@@ -105,7 +155,7 @@ class GifViewer:
                 color = "#C8C8C8" if (tile_x + tile_y) % 2 == 0 else "#646464"
                 self.base_image[y][x] = color
 
-    def _set_frame_into_image(self, frame: GifFrame) -> None:
+    def _set_frame_into_image(self, frame):
         left, top, width, height = frame.left, frame.top, frame.width, frame.height
 
         color_table = (
@@ -129,6 +179,6 @@ class GifViewer:
                 color = f"#{rgb[0]:02X}{rgb[1]:02X}{rgb[2]:02X}"
                 self.base_image[top + y][left + x] = color
 
-    def _update_canvas(self) -> None:
+    def _update_canvas(self):
         rows_str = ["{" + " ".join(row) + "}" for row in self.base_image]
         self.photo.put("\n".join(rows_str))
