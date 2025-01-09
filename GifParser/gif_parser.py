@@ -5,10 +5,8 @@ import struct
 from GifStructs.frame_extensions import (GifApplicationExtension, GifCommentExtension, GifGraphicControlExtension,
                                          GifPlainTextExtension)
 from GifStructs.gif_frame import GifFrame
-from GifStructs.image_descriptor import GifImageDescriptor
 from GifStructs.logical_screen_descriptor import GifLogicalScreenDescriptor
 from GifStructs.gif_header import GifHeader
-from GifStructs.local_color_table import GifLocalColorTable
 from GifParser.lzw_decompressor import LZWDecompressor
 
 
@@ -135,8 +133,7 @@ class GifParser:
             n = packed & 0x07
             size = 2 ** (n + 1) if local_color_table_flag else 0
             data = f.read(size * 3)
-            local_ct_colors = [(data[i], data[i + 1], data[i + 2]) for i in range(0, len(data), 3)]
-            local_ct = GifLocalColorTable(local_ct_colors)
+            local_ct = [(data[i], data[i + 1], data[i + 2]) for i in range(0, len(data), 3)]
         return local_ct
 
     @staticmethod

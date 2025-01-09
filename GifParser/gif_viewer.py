@@ -109,7 +109,7 @@ class GifViewer:
         left, top, width, height = frame.left, frame.top, frame.width, frame.height
 
         color_table = (
-            frame.local_color_table.colors
+            frame.local_color_table
             if frame.local_color_table else self.gif_parser.global_color_table
         )
 
