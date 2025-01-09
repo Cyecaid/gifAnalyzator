@@ -8,8 +8,6 @@ from GifParser.gif_parser import GifParser
 
 def get_descriptor(parser):
     result = f"{parser.header}\n{parser.logical_screen_descriptor}\n"
-    if parser.global_color_table:
-        result += f"{parser.global_color_table}\n"
     return result
 
 

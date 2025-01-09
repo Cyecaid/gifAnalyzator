@@ -16,41 +16,41 @@ from gif_parser_interface import main
 class TestGifParser(unittest.TestCase):
     def test_parse_header(self):
         expected = GifHeader("GIF", "89a")
-        header = GifParser.parse_header(b"\x47\x49\x46\x38\x39\x61")
+        header = GifParser._parse_header(b"\x47\x49\x46\x38\x39\x61")
         self.assertEqual(expected, header)
 
     def test_parse_logical_screen_descriptor(self):
         expected = GifLogicalScreenDescriptor(300, 300, 0b10000000, 1, 0)
-        logical_screen_descriptor = GifParser.parse_logical_screen_descriptor(b"\x2C\x01\x2C\x01\x80\x01\x00")
+        logical_screen_descriptor = GifParser._parse_logical_screen_descriptor(b"\x2C\x01\x2C\x01\x80\x01\x00")
         self.assertEqual(expected, logical_screen_descriptor)
 
     def test_parse_global_color_table(self):
         expected = GifGlobalColorTable([(76, 0, 0), (255, 255, 255)])
-        global_color_table = GifParser.parse_global_color_table(
+        global_color_table = GifParser._parse_global_color_table(
             GifLogicalScreenDescriptor(300, 300, 0b10000000, 1, 0),
             b"\x4C\x00\x00\xFF\xFF\xFF")
         self.assertEqual(expected, global_color_table)
 
     def test_parse_graphic_control_extension(self):
         expected = GifGraphicControlExtension(0, 0, 1, 4, 0)
-        gce = GifParser.parse_graphic_control_extension(b"\x01\x04\x00\x00")
+        gce = GifParser._parse_graphic_control_extension(b"\x01\x04\x00\x00")
         self.assertEqual(expected, gce)
 
     def test_parse_application_extension(self):
         expected = GifApplicationExtension("NETSCAPE", "2.0\x03", b"\x01\x00\x00")
-        app_ext = GifParser.parse_application_extension(
+        app_ext = GifParser._parse_application_extension(
             b"\x4E\x45\x54\x53\x43\x41\x50\x45\x32\x2E\x30\x03", b"\x01\x00\x00")
         self.assertEqual(expected, app_ext)
 
     def test_parse_comment_extension(self):
         expected = GifCommentExtension("test comment")
-        comment_ext = GifParser.parse_comment_extension(b"\x74\x65\x73\x74\x20\x63\x6F\x6D\x6D\x65\x6E\x74")
+        comment_ext = GifParser._parse_comment_extension(b"\x74\x65\x73\x74\x20\x63\x6F\x6D\x6D\x65\x6E\x74")
         self.assertEqual(expected, comment_ext)
 
     def test_parse_plain_text_extension(self):
         expected = GifPlainTextExtension(
             0, 0, 300, 300, 10, 10, 42, 24, "test")
-        plain_text_ext = GifParser.parse_plain_text_extension(
+        plain_text_ext = GifParser._parse_plain_text_extension(
             b"\x00\x00\x00\x00\x2c\x01\x2c\x01\x0a\x0a\x2a\x18", b"\x74\x65\x73\x74")
         self.assertEqual(expected, plain_text_ext)
 

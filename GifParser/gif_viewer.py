@@ -146,7 +146,7 @@ class GifViewer:
 
         color_table = (
             frame.local_color_table.colors
-            if frame.local_color_table else self.gif_parser.global_color_table.colors
+            if frame.local_color_table else self.gif_parser.global_color_table
         )
 
         transparent_idx = (
