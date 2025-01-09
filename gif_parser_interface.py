@@ -49,7 +49,7 @@ def main():
     if args.animate and gif_parser.frames:
         root = tk.Tk()
         viewer = GifViewer(root, gif_parser)
-        viewer.animate()
+        viewer.animate_gif()
         root.mainloop()
 
 

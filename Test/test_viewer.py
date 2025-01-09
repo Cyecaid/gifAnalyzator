@@ -48,7 +48,7 @@ class TestGifViewer(unittest.TestCase):
 
         viewer = GifViewer(self.root, parser)
         viewer.current_frame_idx = 1
-        viewer._process_disposal()
+        viewer._frame_processing()
 
         for y in range(0, 300):
             for x in range(0, 300):
@@ -64,9 +64,9 @@ class TestGifViewer(unittest.TestCase):
         parser.frames[1].graphic_control_extension.disposal_method = 3
 
         viewer = GifViewer(self.root, parser)
-        viewer._process_disposal()
+        viewer._frame_processing()
         viewer.current_frame_idx = 1
-        viewer._process_disposal()
+        viewer._frame_processing()
 
         self.assertEqual(1, len(viewer.previous_images_stack))
         self.assertEqual(viewer.base_image, viewer.previous_images_stack[0])
@@ -76,7 +76,7 @@ class TestGifViewer(unittest.TestCase):
         parser.parse()
         viewer = GifViewer(self.root, parser)
 
-        viewer._clear_image(parser.frames[0].image_descriptor)
+        viewer._clear_canvas(parser.frames[0].image_descriptor)
 
         self.assertEqual(1, len(viewer.base_image))
         self.assertEqual(1, len(viewer.base_image[0]))
@@ -87,7 +87,7 @@ class TestGifViewer(unittest.TestCase):
         parser.parse()
         viewer = GifViewer(self.root, parser)
 
-        viewer._apply_frame(parser.frames[0])
+        viewer._set_frame_into_image(parser.frames[0])
 
         self.assertEqual(1, len(viewer.base_image))
         self.assertEqual(1, len(viewer.base_image[0]))

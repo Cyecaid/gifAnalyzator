@@ -46,12 +46,12 @@ class GifParser:
             elif block_id == 0x21:
                 graphic_control_ext, plain_text_ext, application_ext, comment_ext = GifParser._parse_extension(f)
             elif block_id == 0x2C:
-                image_descriptor = GifParser._parse_image_descriptor(f)
-                local_ct = GifParser._parse_local_color_table(f, image_descriptor)
+                left, top, width, height, packed = GifParser._parse_image_descriptor(f)
+                local_ct = GifParser._parse_local_color_table(f, packed)
                 indices = GifParser._parse_indices(f)
 
-                frame = GifFrame(image_descriptor, local_ct, graphic_control_ext,
-                                 plain_text_ext, application_ext, comment_ext, indices)
+                frame = GifFrame(local_ct, graphic_control_ext,
+                                 plain_text_ext, application_ext, comment_ext, indices, left, top, width, height, packed)
                 self.frames.append(frame)
                 graphic_control_ext = plain_text_ext = application_ext = comment_ext = None
             else:
@@ -125,13 +125,15 @@ class GifParser:
             return None
 
         left, top, width, height, packed = struct.unpack("<HHHHB", img_desc_data)
-        return GifImageDescriptor(left, top, width, height, packed)
+        return left, top, width, height, packed
 
     @staticmethod
-    def _parse_local_color_table(f, image_descriptor):
+    def _parse_local_color_table(f, packed):
         local_ct = None
-        if image_descriptor.local_color_table_flag:
-            size = image_descriptor.local_color_table_size
+        local_color_table_flag = (packed & 0x80) >> 7
+        if local_color_table_flag:
+            n = packed & 0x07
+            size = 2 ** (n + 1) if local_color_table_flag else 0
             data = f.read(size * 3)
             local_ct_colors = [(data[i], data[i + 1], data[i + 2]) for i in range(0, len(data), 3)]
             local_ct = GifLocalColorTable(local_ct_colors)
