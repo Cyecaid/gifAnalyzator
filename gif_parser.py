@@ -4,7 +4,7 @@ import struct
 
 from gif_frame import GifFrame, GraphicControlExtension, ApplicationExtension, CommentExtension, PlainTextExtension
 from logical_screen_descriptor import GifLogicalScreenDescriptor
-from lzw_decompressor import LZWDecompressor
+from lzw_decoder import LZWDecompressor
 
 
 class GifParser:

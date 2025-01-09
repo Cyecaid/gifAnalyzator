@@ -1,32 +1,30 @@
-import argparse
 import logging
 import tkinter as tk
+import click
 
 from gif_viewer import GifViewer
 from gif_parser import GifParser
 from info_output import get_descriptor, print_all_frames_headers
 
 
-def main():
+@click.command()
+@click.argument("input", type=click.Path(exists=True))
+@click.option("--description", "-d", is_flag=True, help="Информация по файлу")
+@click.option("--frames", "-f", is_flag=True, help="Информация о каждом слайде")
+@click.option("--animate", "-a", is_flag=True, help="Показать изображение/анимацию и информацию")
+def main(input, description, frames, animate):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s:\n%(message)s")
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="Путь к GIF-файлу")
-    parser.add_argument("--descriptor", "-d", action="store_true", help="Показать дескриптор экрана")
-    parser.add_argument("--headers", "-H", action="store_true", help="Показать заголовки для каждого кадра")
-    parser.add_argument("--animate", "-a", action="store_true", help="Показать изображение/анимацию")
-    args = parser.parse_args()
-    filepath = args.input
 
-    gif_parser = GifParser(filepath)
+    gif_parser = GifParser(input)
     gif_parser.parse()
 
-    if args.descriptor:
+    if description:
         logging.info(get_descriptor(gif_parser))
 
-    if args.headers:
+    if frames:
         logging.info(print_all_frames_headers(gif_parser))
 
-    if args.animate and gif_parser.frames:
+    if animate and gif_parser.frames:
         root = tk.Tk()
         viewer = GifViewer(root, gif_parser)
         viewer.animate_gif()

@@ -1,2 +1,2 @@
-argparse~=1.4.0
 customtkinter~=5.2.2
+click~=8.1.3
