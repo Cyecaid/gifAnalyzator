@@ -25,10 +25,9 @@ class GifImageDescriptor:
 
     def __str__(self):
         return (f"Блок изображения:\n"
-                f"  Левый верхний угол экрана: ({self.left}, {self.top})\n"
-                f"  Ширина: {self.width} px\n"
-                f"  Высота: {self.height} px\n"
-                f"  Флаг использования локальной таблицы цветов: {self.local_color_table_flag}\n"
-                f"  Флаг чересстрочной развертки: {self.interlace_flag}\n"
-                f"  Флаг сортировки локальной таблицы цветов: {self.sort_flag}\n"
-                f"  Размер локальной таблицы цветов: {self.local_color_table_size}")
+                f"  Позиция изображения: ({self.left}, {self.top})\n"
+                f"  Разрешение: {self.width}x{self.height}\n"
+                f"  Использование локальной таблицы цветов: {self.local_color_table_flag}\n"
+                f"  Использование чересстрочной развертки: {self.interlace_flag}\n"
+                f"  Использование сортировки локальной таблицы цветов: {self.sort_flag}\n" if self.local_color_table_flag else ""
+                f"  Размер локальной таблицы цветов: {self.local_color_table_size}" if self.local_color_table_flag else "")
