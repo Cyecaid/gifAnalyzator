@@ -176,15 +176,20 @@ def test_parse_pixel_indices():
             mock_file.read.assert_called_once()
 
 
+from unittest.mock import patch
+
+
 @patch('logging.error')
 def test_parse_screen_descriptor_invalid_header(mock_logging_error):
     header = b'XYZ123'
     descriptor_data = b'\x10\x00\x10\x00\xF7\x00\x00'
 
-    result = GifParser._parse_screen_descriptor(header, descriptor_data)
-
-    assert result is None
-    mock_logging_error.assert_called_once_with("Неверный формат файла")
+    try:
+        result = GifParser._parse_screen_descriptor(header, descriptor_data)
+        assert False
+    except ValueError as e:
+        assert True
+        mock_logging_error.assert_called_once_with("Неверный формат файла")
 
 
 @patch('logging.error')

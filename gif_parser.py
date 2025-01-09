@@ -69,7 +69,7 @@ class GifParser:
 
         if signature != 'GIF':
             logging.error("Неверный формат файла")
-            return None
+            raise ValueError
 
         width, height, packed, bg_color_index, aspect_ratio = struct.unpack("<HHBBB", descriptor_data)
         return FileDescription(signature, version, width, height, packed, bg_color_index, aspect_ratio)
