@@ -35,7 +35,7 @@ class GifViewer:
         self.play_pause_btn = ctk.CTkButton(top_controls_frame, text="Старт", command=self._toggle_play_pause)
         self.play_pause_btn.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.next_frame_btn = ctk.CTkButton(top_controls_frame, text="Следующий кадр", command=self._next_frame, state=tk.DISABLED)
+        self.next_frame_btn = ctk.CTkButton(top_controls_frame, text="Следующий кадр", command=self._next_frame, state=tk.NORMAL if len(self.gif_parser.frames) > 1 else tk.DISABLED)
         self.next_frame_btn.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.current_frame_label = ctk.CTkLabel(top_controls_frame, text=f"Кадр: {self.current_frame_idx + 1}/{len(self.gif_parser.frames)}")
@@ -75,7 +75,7 @@ class GifViewer:
             return
 
         frame = self.gif_parser.frames[self.current_frame_idx]
-        delay = frame.graphic_control_extension.delay_time if frame.graphic_control_extension else 100
+        delay = (frame.graphic_control_extension.delay_time * 10) if frame.graphic_control_extension else 100
 
         self._frame_processing()
         self._set_frame_into_image(frame)
@@ -93,20 +93,29 @@ class GifViewer:
         self.is_playing = not self.is_playing
         self.play_pause_btn.configure(text="Пауза" if self.is_playing else "Старт")
 
-        self.prev_frame_btn.configure(state=tk.DISABLED if self.is_playing else tk.NORMAL)
-        self.next_frame_btn.configure(state=tk.DISABLED if self.is_playing else tk.NORMAL)
+        self.prev_frame_btn.configure(state=tk.DISABLED if self.is_playing else (tk.NORMAL if self.current_frame_idx > 0 else tk.DISABLED))
+        self.next_frame_btn.configure(state=tk.DISABLED if self.is_playing else (tk.NORMAL if self.current_frame_idx < len(self.gif_parser.frames) - 1 else tk.DISABLED))
+
         self.current_frame_label.configure(text=f"Кадр: {self.current_frame_idx + 1}/{len(self.gif_parser.frames)}")
 
         if self.is_playing:
             self.animate_gif()
 
     def _previous_frame(self):
-        self.current_frame_idx = (self.current_frame_idx - 1) % len(self.gif_parser.frames)
-        self._update_frame()
+        if self.current_frame_idx > 0:
+            self.current_frame_idx -= 1
+            self._update_frame()
+
+        self.prev_frame_btn.configure(state=tk.DISABLED if self.current_frame_idx == 0 else tk.NORMAL)
+        self.next_frame_btn.configure(state=tk.NORMAL)
 
     def _next_frame(self):
-        self.current_frame_idx = (self.current_frame_idx + 1) % len(self.gif_parser.frames)
-        self._update_frame()
+        if self.current_frame_idx < len(self.gif_parser.frames) - 1:
+            self.current_frame_idx += 1
+            self._update_frame()
+
+        self.next_frame_btn.configure(state=tk.DISABLED if self.current_frame_idx == len(self.gif_parser.frames) - 1 else tk.NORMAL)
+        self.prev_frame_btn.configure(state=tk.NORMAL)
 
     def _update_frame(self):
         frame = self.gif_parser.frames[self.current_frame_idx]
