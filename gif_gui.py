@@ -1,10 +1,10 @@
 import tkinter as tk
 import customtkinter as ctk
 
-from info_output import print_all_frames_headers, get_descriptor
+from info_output import print_frames_description, print_file_description
 
 
-class GifViewer:
+class GifGUI:
     def __init__(self, root, gif_parser):
         self.root = root
         self.gif_parser = gif_parser
@@ -126,7 +126,7 @@ class GifViewer:
         self.current_frame_label.configure(text=f"Кадр: {self.current_frame_idx + 1}/{len(self.gif_parser.frames)}")
 
     def _populate_info(self):
-        info = get_descriptor(self.gif_parser) + print_all_frames_headers(self.gif_parser)
+        info = print_file_description(self.gif_parser) + print_frames_description(self.gif_parser)
         self.info_textbox.insert("1.0", info)
 
     @staticmethod

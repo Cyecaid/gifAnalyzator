@@ -2,9 +2,9 @@ import logging
 import os
 import struct
 
-from gif_frame import GifFrame, GraphicControlExtension, ApplicationExtension, CommentExtension, PlainTextExtension
-from logical_screen_descriptor import GifLogicalScreenDescriptor
-from lzw_decoder import LZWDecompressor
+from gif_frame import Frame, GraphicControlExtension, ApplicationExtension, CommentExtension, PlainTextExtension
+from file_description import FileDescription
+from lzw_decoder import LZWDecoder
 
 
 class GifParser:
@@ -43,8 +43,8 @@ class GifParser:
                 local_ct = GifParser._parse_local_color_table(f, packed)
                 indices = GifParser._parse_indices(f)
 
-                frame = GifFrame(local_ct, graphic_control_ext,
-                                 plain_text_ext, application_ext, comment_ext, indices, left, top, width, height, packed)
+                frame = Frame(local_ct, graphic_control_ext,
+                              plain_text_ext, application_ext, comment_ext, indices, left, top, width, height, packed)
                 self.frames.append(frame)
                 graphic_control_ext = plain_text_ext = application_ext = comment_ext = None
             else:
@@ -69,7 +69,7 @@ class GifParser:
             return None
 
         width, height, packed, bg_color_index, aspect = struct.unpack("<HHBBB", log_desc_data)
-        return GifLogicalScreenDescriptor(signature, version, width, height, packed, bg_color_index, aspect)
+        return FileDescription(signature, version, width, height, packed, bg_color_index, aspect)
 
     @staticmethod
     def _parse_global_color_table(logical_screen_descriptor, data):
@@ -131,7 +131,7 @@ class GifParser:
     def _parse_indices(f):
         lzw_min_code_size = f.read(1)[0]
         img_data_blocks = GifParser._read_sub_blocks(f)
-        decompressor = LZWDecompressor(lzw_min_code_size, img_data_blocks)
+        decompressor = LZWDecoder(lzw_min_code_size, img_data_blocks)
         return decompressor.decode()
 
     @staticmethod

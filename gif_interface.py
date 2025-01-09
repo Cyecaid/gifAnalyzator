@@ -2,9 +2,9 @@ import logging
 import tkinter as tk
 import click
 
-from gif_viewer import GifViewer
+from gif_gui import GifGUI
 from gif_parser import GifParser
-from info_output import get_descriptor, print_all_frames_headers
+from info_output import print_file_description, print_frames_description
 
 
 @click.command()
@@ -19,14 +19,14 @@ def main(input, description, frames, animate):
     gif_parser.parse()
 
     if description:
-        logging.info(get_descriptor(gif_parser))
+        logging.info(print_file_description(gif_parser))
 
     if frames:
-        logging.info(print_all_frames_headers(gif_parser))
+        logging.info(print_frames_description(gif_parser))
 
     if animate and gif_parser.frames:
         root = tk.Tk()
-        viewer = GifViewer(root, gif_parser)
+        viewer = GifGUI(root, gif_parser)
         viewer.animate_gif()
         root.mainloop()
 

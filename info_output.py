@@ -1,15 +1,15 @@
 from gif_parser import GifParser
 
 
-def get_descriptor(parser: GifParser):
+def print_file_description(parser: GifParser):
     result = f"{parser.logical_screen_descriptor}\n"
     return result
 
 
-def print_all_frames_headers(parser: GifParser):
-    result = f"{get_descriptor(parser)}\n"
+def print_frames_description(parser: GifParser):
+    result = f"{print_file_description(parser)}\n"
     for i, frame in enumerate(parser.frames, start=1):
-        result += f"Кадр {i}:\n"
+        result += f"* Кадр {i}:\n"
         result += f"{frame}\n"
         if frame.graphic_control_extension:
             result += f"{frame.graphic_control_extension}\n"

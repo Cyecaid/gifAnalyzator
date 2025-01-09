@@ -1,4 +1,4 @@
-class LZWDecompressor:
+class LZWDecoder:
     def __init__(self, min_code_size, data):
         self.min_code_size = min_code_size
         self.data = data
