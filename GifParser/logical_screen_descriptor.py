@@ -23,10 +23,10 @@ class GifLogicalScreenDescriptor:
 
     def __str__(self):
         return (f"Тип файла: {self.signature}{self.version}\n"
-                f"Логический дескриптор экрана:\n"
+                f"Дескриптор экрана:\n"
                 f"  Разрешение: {self.width}x{self.height}\n"
-                f"  Использования глобальной таблицы цветов: {self.global_color_table_flag}\n"
-                f"  Использование сортировки: {self.sort_flag}\n"
-                f"  Размер общей таблицы цветов: {self.global_color_table_size}\n"
-                f"  Индекс цвета фона: {self.bg_color_index}\n"
+                f"  Использования глобальной таблицы цветов: {bool(self.global_color_table_flag)}\n"
+                f"  Использование сортировки: {bool(self.sort_flag)}\n"
+                f"  Количество цветов в общей таблице: {self.global_color_table_size}\n"
+                f"  Цвета фона (индекс): {self.bg_color_index}\n"
                 f"  Соотношение сторон: {self.pixel_aspect_ratio}")

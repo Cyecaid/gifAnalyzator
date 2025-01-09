@@ -24,6 +24,7 @@ def print_all_frames_headers(parser):
             result += f"{frame.application_ext}\n"
         if frame.comment_ext:
             result += f"{frame.comment_ext}\n"
+        result += "\n"
     return result
 
 

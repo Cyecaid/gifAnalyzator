@@ -34,11 +34,11 @@ class GifFrame:
     def __str__(self):
         result = (f"Позиция изображения: ({self.left}, {self.top})\n"
                   f"Разрешение: {self.width}x{self.height}\n"
-                  f"Использование чересстрочной развертки: {self.interlace_flag}\n")
-        result += f"{'Есть локальная таблица цветов' if self.local_color_table else 'Нет локальной таблицы цветов'}\n"
+                  f"Использование чересстрочной развертки: {bool(self.interlace_flag)}\n")
+        result += f"{'Локальная таблица цветов - Есть' if self.local_color_table else 'Локальная таблица цветов - Отсутствует'}\n"
         if self.local_color_table_flag:
-            result += (f"Использование сортировки локальной таблицы цветов: {self.sort_flag}\n"
-                       f"Размер локальной таблицы цветов: {self.local_color_table_size}\n")
+            result += (f"Количество цветов в локальной таблице: {self.local_color_table_size}\n"
+                       f"Использование сортировки локальной таблицы цветов: {bool(self.sort_flag)}\n")
         return result
 
 
@@ -81,10 +81,10 @@ class GraphicControlExtension:
         }
         return (f"Расширение управления графикой:\n"
                 f"  Метод обработки: {self.disposal_method} ({disp_methods.get(self.disposal_method, 'Не определён')})\n"
-                f"  Флаг ввода пользователя: {self.user_input_flag}\n"
-                f"  Флаг цвета прозрачности: {self.transparency_flag}\n"
-                f"  Время задержки в анимации: {self.delay_time * 10} мс\n"
-                f"  Индекс цвета прозрачности: {self.transparent_color_index}")
+                f"  Использование ввода пользователя: {bool(self.user_input_flag)}\n"
+                f"  Использование цвета прозрачности: {bool(self.transparency_flag)}\n"
+                f"  Время задержки: {self.delay_time * 10} мс\n"
+                f"  Цвет прозрачности (индекс): {self.transparent_color_index}")
 
 
 class PlainTextExtension:
@@ -105,6 +105,6 @@ class PlainTextExtension:
                 f"  Позиция изображения: ({self.left_pos}, {self.top_pos})\n"
                 f"  Разрешение: {self.width}x{self.height}\n"
                 f"  Размер ячейки: {self.cell_width}x{self.cell_height}\n"
-                f"  Индекс цвета переднего плана: {self.foreground_color_index}\n"
-                f"  Индекс цвета заднего плана: {self.background_color_index}\n"
+                f"  Цвет переднего плана (индекс): {self.foreground_color_index}\n"
+                f"  Цвета заднего плана (индекс): {self.background_color_index}\n"
                 f"  Текст: {self.text_data}")
