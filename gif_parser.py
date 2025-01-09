@@ -34,11 +34,11 @@ class GifParser:
             if len(byte) == 0:
                 break
             block_id = byte[0]
-            if block_id == 0x3B:  # GIF trailer
+            if block_id == 0x3B:
                 break
-            elif block_id == 0x21:  # Extension block
+            elif block_id == 0x21:
                 graphic_control_extension, plain_text_extension, application_extension, comment_extension = self._parse_extension(file)
-            elif block_id == 0x2C:  # Image descriptor
+            elif block_id == 0x2C:
                 left, top, width, height, packed = self._parse_image_descriptor(file)
                 local_color_table = self._parse_local_color_table(file, packed)
                 pixel_indices = self._parse_pixel_indices(file)
