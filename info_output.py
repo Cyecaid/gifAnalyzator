@@ -2,7 +2,7 @@ from gif_parser import GifParser
 
 
 def print_file_description(parser: GifParser):
-    result = f"{parser.logical_screen_descriptor}\n"
+    result = f"{parser.screen_descriptor}\n"
     return result
 
 

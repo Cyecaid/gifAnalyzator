@@ -11,8 +11,8 @@ class GifGUI:
         self.current_frame_idx = 0
         self.is_playing = False
 
-        self.width = gif_parser.logical_screen_descriptor.width
-        self.height = gif_parser.logical_screen_descriptor.height
+        self.width = gif_parser.screen_descriptor.width
+        self.height = gif_parser.screen_descriptor.height
 
         self.checkerboard = self._create_checkerboard(self.width, self.height)
         self._configure_root_window(root)
