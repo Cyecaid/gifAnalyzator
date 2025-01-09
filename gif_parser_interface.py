@@ -2,8 +2,8 @@ import argparse
 import logging
 import tkinter as tk
 
-from GifParser.gif_viewer import GifViewer
-from GifParser.gif_parser import GifParser
+from gif_viewer import GifViewer
+from gif_parser import GifParser
 
 
 def get_descriptor(parser):

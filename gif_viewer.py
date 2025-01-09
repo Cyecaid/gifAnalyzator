@@ -1,5 +1,5 @@
-from GifParser.gif_parser import GifParser
-from GifParser.gif_frame import GifFrame
+from gif_parser import GifParser
+from gif_frame import GifFrame
 import tkinter as tk
 
 
