@@ -21,7 +21,7 @@ class TestGifParser(unittest.TestCase):
 
     def test_parse_logical_screen_descriptor(self):
         expected = GifLogicalScreenDescriptor(300, 300, 0b10000000, 1, 0)
-        logical_screen_descriptor = GifParser._parse_logical_screen_descriptor(b"\x2C\x01\x2C\x01\x80\x01\x00")
+        logical_screen_descriptor = GifParser._parse_logical_screen_descriptor_and_headers(b"\x2C\x01\x2C\x01\x80\x01\x00")
         self.assertEqual(expected, logical_screen_descriptor)
 
     def test_parse_global_color_table(self):

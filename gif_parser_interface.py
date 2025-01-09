@@ -7,7 +7,7 @@ from GifParser.gif_parser import GifParser
 
 
 def get_descriptor(parser):
-    result = f"{parser.header}\n{parser.logical_screen_descriptor}\n"
+    result = f"{parser.logical_screen_descriptor}\n"
     return result
 
 
@@ -15,6 +15,7 @@ def print_all_frames_headers(parser):
     result = f"{get_descriptor(parser)}\n"
     for i, frame in enumerate(parser.frames, start=1):
         result += f"Кадр {i}:\n"
+        result += f"{frame}\n"
         if frame.graphic_control_extension:
             result += f"{frame.graphic_control_extension}\n"
         if frame.plain_text_ext:
@@ -23,7 +24,6 @@ def print_all_frames_headers(parser):
             result += f"{frame.application_ext}\n"
         if frame.comment_ext:
             result += f"{frame.comment_ext}\n"
-        result += f"{frame}\n"
     return result
 
 
@@ -40,10 +40,10 @@ def main():
     gif_parser = GifParser(filepath)
     gif_parser.parse()
 
-    if args.descriptor and gif_parser.header:
+    if args.descriptor:
         logging.info(get_descriptor(gif_parser))
 
-    if args.headers and gif_parser.header:
+    if args.headers:
         logging.info(print_all_frames_headers(gif_parser))
 
     if args.animate and gif_parser.frames:

@@ -1,5 +1,7 @@
 class GifLogicalScreenDescriptor:
-    def __init__(self, width, height, packed, bg_color_index, pixel_aspect_ratio):
+    def __init__(self, signature, version, width, height, packed, bg_color_index, pixel_aspect_ratio):
+        self.signature = signature
+        self.version = version
         self.width = width
         self.height = height
         self.packed = packed
@@ -20,7 +22,8 @@ class GifLogicalScreenDescriptor:
         return 2 ** (n + 1)
 
     def __str__(self):
-        return (f"Логический дескриптор экрана:\n"
+        return (f"Тип файла: {self.signature}{self.version}\n"
+                f"Логический дескриптор экрана:\n"
                 f"  Разрешение: {self.width}x{self.height}\n"
                 f"  Использования глобальной таблицы цветов: {self.global_color_table_flag}\n"
                 f"  Использование сортировки: {self.sort_flag}\n"

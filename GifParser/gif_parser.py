@@ -6,14 +6,12 @@ from GifStructs.frame_extensions import (GifApplicationExtension, GifCommentExte
                                          GifPlainTextExtension)
 from GifStructs.gif_frame import GifFrame
 from GifStructs.logical_screen_descriptor import GifLogicalScreenDescriptor
-from GifStructs.gif_header import GifHeader
 from GifParser.lzw_decompressor import LZWDecompressor
 
 
 class GifParser:
     def __init__(self, filename):
         self.filename = filename
-        self.header = None
         self.logical_screen_descriptor = None
         self.global_color_table = None
         self.frames = []
@@ -25,9 +23,8 @@ class GifParser:
 
         with open(self.filename, 'rb') as f:
             header_data = f.read(6)
-            self.header = self._parse_header(header_data)
             log_desc_data = f.read(7)
-            self.logical_screen_descriptor = self._parse_logical_screen_descriptor(log_desc_data)
+            self.logical_screen_descriptor = self._parse_logical_screen_descriptor_and_headers(header_data, log_desc_data)
             data = f.read(self.logical_screen_descriptor.global_color_table_size * 3)
             self.global_color_table = self._parse_global_color_table(self.logical_screen_descriptor, data)
             self._parse_blocks(f)
@@ -56,9 +53,13 @@ class GifParser:
                 GifParser._skip_sub_blocks(f)
 
     @staticmethod
-    def _parse_header(header_data):
+    def _parse_logical_screen_descriptor_and_headers(header_data, log_desc_data):
         if len(header_data) != 6:
             logging.error("Неверная длина заголовка")
+            return None
+
+        if len(log_desc_data) != 7:
+            logging.error("Неверна длина логического дескриптора экрана")
             return None
 
         signature, version = struct.unpack("3s3s", header_data)
@@ -69,16 +70,8 @@ class GifParser:
             logging.error("Неверный формат файла")
             return None
 
-        return GifHeader(signature, version)
-
-    @staticmethod
-    def _parse_logical_screen_descriptor(log_desc_data):
-        if len(log_desc_data) != 7:
-            logging.error("Неверна длина логического дескриптора экрана")
-            return None
-
         width, height, packed, bg_color_index, aspect = struct.unpack("<HHBBB", log_desc_data)
-        return GifLogicalScreenDescriptor(width, height, packed, bg_color_index, aspect)
+        return GifLogicalScreenDescriptor(signature, version, width, height, packed, bg_color_index, aspect)
 
     @staticmethod
     def _parse_global_color_table(logical_screen_descriptor, data):
