@@ -2,8 +2,8 @@ import logging
 import os
 import struct
 
-from GifStructs.extensions import (GifApplicationExtension, GifCommentExtension, GifGraphicControlExtension,
-                                   GifPlainTextExtension)
+from GifStructs.frame_extensions import (GifApplicationExtension, GifCommentExtension, GifGraphicControlExtension,
+                                         GifPlainTextExtension)
 from GifStructs.gif_frame import GifFrame
 from GifStructs.image_descriptor import GifImageDescriptor
 from GifStructs.logical_screen_descriptor import GifLogicalScreenDescriptor

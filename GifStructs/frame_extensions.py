@@ -20,7 +20,6 @@ class GifCommentExtension:
                 f"  Комментарий: {self.comment}")
 
 
-
 class GifGraphicControlExtension:
     def __init__(self, disposal_method, user_input_flag, transparency_flag, delay_time, transparent_color_index):
         self.disposal_method = disposal_method
@@ -59,11 +58,9 @@ class GifPlainTextExtension:
 
     def __str__(self):
         return (f"Расширение текста:\n"
-                f"  Левый верхний угол экрана: ({self.left_pos}, {self.top_pos})\n"
-                f"  Ширина: {self.width} px\n"
-                f"  Высота: {self.height} px\n"
-                f"  Ширина ячейки: {self.cell_width}\n"
-                f"  Высота ячейки: {self.cell_height}\n"
+                f"  Позиция изображения: ({self.left_pos}, {self.top_pos})\n"
+                f"  Разрешение: {self.width}x{self.height}\n"
+                f"  Размер ячейки: {self.cell_width}x{self.cell_height}\n"
                 f"  Индекс цвета переднего плана: {self.foreground_color_index}\n"
                 f"  Индекс цвета заднего плана: {self.background_color_index}\n"
                 f"  Текст: {self.text_data}")

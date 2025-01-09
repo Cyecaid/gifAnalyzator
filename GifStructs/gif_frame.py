@@ -10,6 +10,5 @@ class GifFrame:
         self.image_data = image_data
 
     def __str__(self):
-        return (f"{self.image_descriptor}\n"
-                f"{'Есть локальная таблица цветов' if self.local_color_table else 'Нет локальной таблицы цветов'}\n")
+        return f"{self.image_descriptor}\n" + f"{'Есть локальная таблица цветов' if self.local_color_table else 'Нет локальной таблицы цветов'}\n"
 

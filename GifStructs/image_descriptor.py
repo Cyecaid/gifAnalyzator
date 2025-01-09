@@ -24,10 +24,13 @@ class GifImageDescriptor:
         return 2 ** (n + 1) if self.local_color_table_flag else 0
 
     def __str__(self):
-        return (f"Блок изображения:\n"
-                f"  Позиция изображения: ({self.left}, {self.top})\n"
-                f"  Разрешение: {self.width}x{self.height}\n"
-                f"  Использование локальной таблицы цветов: {self.local_color_table_flag}\n"
-                f"  Использование чересстрочной развертки: {self.interlace_flag}\n"
-                f"  Использование сортировки локальной таблицы цветов: {self.sort_flag}\n" if self.local_color_table_flag else ""
-                f"  Размер локальной таблицы цветов: {self.local_color_table_size}" if self.local_color_table_flag else "")
+        result = (f"Блок изображения:\n"
+                  f"  Позиция изображения: ({self.left}, {self.top})\n"
+                  f"  Разрешение: {self.width}x{self.height}\n"
+                  f"  Использование локальной таблицы цветов: {self.local_color_table_flag}\n"
+                  f"  Использование чересстрочной развертки: {self.interlace_flag}\n")
+        if self.local_color_table_flag:
+            result += (f"  Использование сортировки локальной таблицы цветов: {self.sort_flag}\n"
+                       f"  Размер локальной таблицы цветов: {self.local_color_table_size}\n")
+        return result
+
