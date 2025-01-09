@@ -38,7 +38,7 @@ class GifParser:
     @staticmethod
     def parse_header(header_data):
         if len(header_data) != 6:
-            logging.error("Invalid header size")
+            logging.error("Неверная длина заголовка")
             return None
 
         signature, version = struct.unpack("3s3s", header_data)
@@ -46,7 +46,7 @@ class GifParser:
         version = version.decode('ascii', errors='replace')
 
         if signature != 'GIF':
-            logging.error("Invalid file format")
+            logging.error("Неверный формат файла")
             return None
 
         return GifHeader(signature, version)
@@ -54,7 +54,7 @@ class GifParser:
     @staticmethod
     def parse_logical_screen_descriptor(log_desc_data):
         if len(log_desc_data) != 7:
-            logging.error("Invalid logical screen descriptor size")
+            logging.error("Неверна длина логического дескриптора экрана")
             return None
 
         width, height, packed, bg_color_index, aspect = struct.unpack("<HHBBB", log_desc_data)
@@ -122,7 +122,7 @@ class GifParser:
     def parse_image_descriptor(f):
         img_desc_data = f.read(9)
         if len(img_desc_data) != 9:
-            logging.error("Invalid image descriptor size")
+            logging.error("неверная длина дескриптора изображения")
             return None
 
         left, top, width, height, packed = struct.unpack("<HHHHB", img_desc_data)
@@ -159,7 +159,7 @@ class GifParser:
     @staticmethod
     def parse_plain_text_extension(pte_data, text_data):
         if len(pte_data) != 12:
-            logging.error("Invalid plain text extension size")
+            logging.error("Неверная длина простого текста")
             return None
 
         left, top, width, height, cell_width, cell_height, fg_color_index, bg_color_index = struct.unpack("<HHHHBBBB",
