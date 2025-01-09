@@ -86,22 +86,22 @@ class GifParser:
         graphic_control_extension = plain_text_extension = application_extension = comment_extension = None
 
         extension_label = file.read(1)[0]
-        if extension_label == 0xF9:  # Graphic Control Extension
+        if extension_label == 0xF9:
             file.read(1)
             extension_data = file.read(4)
             file.read(1)
             graphic_control_extension = GifParser._parse_graphic_control_extension(extension_data)
-        elif extension_label == 0x01:  # Plain Text Extension
+        elif extension_label == 0x01:
             file.read(1)
             text_extension_data = file.read(12)
             text_sub_blocks = GifParser._read_sub_blocks(file)
             plain_text_extension = GifParser._parse_plain_text_extension(text_extension_data, text_sub_blocks)
-        elif extension_label == 0xFF:  # Application Extension
+        elif extension_label == 0xFF:
             file.read(1)
             app_extension_data = file.read(11)
             app_sub_blocks = GifParser._read_sub_blocks(file)
             application_extension = GifParser._parse_application_extension(app_extension_data, app_sub_blocks)
-        elif extension_label == 0xFE:  # Comment Extension
+        elif extension_label == 0xFE:
             comment_sub_blocks = GifParser._read_sub_blocks(file)
             comment_extension = GifParser._parse_comment_extension(comment_sub_blocks)
         else:

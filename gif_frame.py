@@ -38,7 +38,7 @@ class Frame:
         if self.local_color_table_flag:
             result += f"  —  Локальная таблица цветов - Есть\n"
         else:
-            result += f"  —  Локальная таблица цветов - Отсутствует'\n"
+            result += f"  —  Локальная таблица цветов - Отсутствует\n"
         if self.local_color_table_flag:
             result += (f"  —  Количество цветов в локальной таблице: {self.local_color_table_size}\n"
                        f"  —  Использование сортировки локальной таблицы цветов: {bool(self.sort_flag)}\n")
