@@ -75,7 +75,7 @@ class GifGUI:
             return
 
         frame = self.gif_parser.frames[self.current_frame_idx]
-        delay = (frame.graphic_control_extension.delay_time * 10) if frame.graphic_control_extension else 100
+        delay = frame.graphic_control_extension.delay_time if frame.graphic_control_extension else 100
 
         self._frame_processing()
         self._set_frame_into_image(frame)
