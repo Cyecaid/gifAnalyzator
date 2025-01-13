@@ -1,0 +1,2 @@
+class GifFormatError(Exception):
+    pass

@@ -5,6 +5,7 @@ import struct
 from gif_frame import Frame, GraphicControlExtension, ApplicationExtension, CommentExtension, PlainTextExtension
 from file_description import FileDescription
 from lzw_decoder import LZWDecoder
+from gif_custom_errors import GifFormatError
 
 
 class GifParser:
@@ -16,15 +17,22 @@ class GifParser:
 
     def parse(self):
         if not os.path.exists(self.file_path):
-            logging.error(f"Файл {self.file_path} не найден.")
-            return
+            raise FileNotFoundError(f"Файл {self.file_path} не найден.")
 
         with open(self.file_path, 'rb') as file:
             header = file.read(6)
             screen_descriptor_data = file.read(7)
-            self.screen_descriptor = self._parse_screen_descriptor(header, screen_descriptor_data)
+            try:
+                self.screen_descriptor = self._parse_screen_descriptor(header, screen_descriptor_data)
+            except GifFormatError as e:
+                raise GifFormatError(f"Ошибка при разборе заголовков GIF файла: {str(e)}")
+
             color_table_data = file.read(self.screen_descriptor.global_color_table_size * 3)
-            self.global_color_table = self._parse_global_color_table(self.screen_descriptor, color_table_data)
+            try:
+                self.global_color_table = self._parse_global_color_table(self.screen_descriptor, color_table_data)
+            except GifFormatError as e:
+                raise GifFormatError(f"Ошибка при разборе глобальной таблицы цветов: {str(e)}")
+
             self._parse_blocks(file)
 
     def _parse_blocks(self, file):
@@ -39,7 +47,11 @@ class GifParser:
             elif block_id == 0x21:
                 graphic_control_extension, plain_text_extension, application_extension, comment_extension = self._parse_extension(file)
             elif block_id == 0x2C:
-                left, top, width, height, packed = self._parse_image_descriptor(file)
+                try:
+                    left, top, width, height, packed = self._parse_image_descriptor(file)
+                except GifFormatError as e:
+                    raise GifFormatError(f"Ошибка при разборе дескриптора изображения: {str(e)}")
+
                 local_color_table = self._parse_local_color_table(file, packed)
                 pixel_indices = self._parse_pixel_indices(file)
 
@@ -56,20 +68,17 @@ class GifParser:
     @staticmethod
     def _parse_screen_descriptor(header, descriptor_data):
         if len(header) != 6:
-            logging.error("Неверная длина заголовка")
-            return None
+            raise GifFormatError("Неверная длина заголовка.")
 
         if len(descriptor_data) != 7:
-            logging.error("Неверна длина логического дескриптора экрана")
-            return None
+            raise GifFormatError("Неверная длина логического дескриптора экрана.")
 
         signature, version = struct.unpack("3s3s", header)
         signature = signature.decode('ascii', errors='replace')
         version = version.decode('ascii', errors='replace')
 
         if signature != 'GIF':
-            logging.error("Неверный формат файла")
-            raise ValueError
+            raise GifFormatError("Файл не является GIF-форматом.")
 
         width, height, packed, bg_color_index, aspect_ratio = struct.unpack("<HHBBB", descriptor_data)
         return FileDescription(signature, version, width, height, packed, bg_color_index, aspect_ratio)
@@ -77,6 +86,8 @@ class GifParser:
     @staticmethod
     def _parse_global_color_table(screen_descriptor, data):
         if screen_descriptor.global_color_table_flag:
+            if len(data) != screen_descriptor.global_color_table_size * 3:
+                raise GifFormatError("Некорректные данные глобальной таблицы цветов.")
             colors = [(data[i], data[i + 1], data[i + 2]) for i in range(0, len(data), 3)]
             return colors
         return None
@@ -113,8 +124,7 @@ class GifParser:
     def _parse_image_descriptor(file):
         descriptor_data = file.read(9)
         if len(descriptor_data) != 9:
-            logging.error("Неверная длина дескриптора изображения")
-            return None
+            raise GifFormatError("Неверная длина дескриптора изображения.")
 
         left, top, width, height, packed = struct.unpack("<HHHHB", descriptor_data)
         return left, top, width, height, packed
@@ -127,6 +137,8 @@ class GifParser:
             size_flag = packed & 0x07
             table_size = 2 ** (size_flag + 1)
             color_table_data = file.read(table_size * 3)
+            if len(color_table_data) != table_size * 3:
+                raise GifFormatError("Некорректная длина локальной таблицы цветов.")
             local_color_table = [(color_table_data[i], color_table_data[i + 1], color_table_data[i + 2]) for i in range(0, len(color_table_data), 3)]
         return local_color_table
 
@@ -140,8 +152,7 @@ class GifParser:
     @staticmethod
     def _parse_graphic_control_extension(data):
         if len(data) != 4:
-            logging.error("Неверная длина расширения графики")
-            return None
+            raise GifFormatError("Неверная длина расширения графики.")
         packed, delay_low, delay_high, transparent_color_index = struct.unpack('<BBBB', data)
 
         disposal_method = (packed & 0x1C) >> 2
@@ -155,8 +166,7 @@ class GifParser:
     @staticmethod
     def _parse_plain_text_extension(header_data, text_data):
         if len(header_data) != 12:
-            logging.error("Неверная длина расширения простого текста")
-            return None
+            raise GifFormatError("Неверная длина расширения простого текста.")
 
         left, top, width, height, cell_width, cell_height, fg_color_index, bg_color_index = struct.unpack("<HHHHBBBB", header_data)
         text_content = text_data.decode('ascii', errors='replace')

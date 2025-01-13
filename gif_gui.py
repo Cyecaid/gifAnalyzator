@@ -1,7 +1,12 @@
 import tkinter as tk
+from tkinter import messagebox
+import logging
+
+import _tkinter
 import customtkinter as ctk
 
 from info_output import print_frames_description, print_file_description
+from gif_custom_errors import GifFormatError
 
 
 class GifGUI:
@@ -19,6 +24,8 @@ class GifGUI:
         self._create_ui_components()
         self.base_image = [row.copy() for row in self.checkerboard]
         self.previous_images_stack = []
+
+        self.root.mainloop()
 
     @staticmethod
     def _configure_root_window(root):
@@ -73,21 +80,25 @@ class GifGUI:
     def animate_gif(self):
         if not self.is_playing:
             return
+        try:
+            frame = self.gif_parser.frames[self.current_frame_idx]
+            delay = frame.graphic_control_extension.delay_time if frame.graphic_control_extension else 100
 
-        frame = self.gif_parser.frames[self.current_frame_idx]
-        delay = frame.graphic_control_extension.delay_time if frame.graphic_control_extension else 100
+            self._frame_processing()
+            self._set_frame_into_image(frame)
+            self._update_canvas()
 
-        self._frame_processing()
-        self._set_frame_into_image(frame)
-        self._update_canvas()
+            self.current_frame_label.configure(text=f"Кадр: {self.current_frame_idx + 1}/{len(self.gif_parser.frames)}")
 
-        self.current_frame_label.configure(text=f"Кадр: {self.current_frame_idx + 1}/{len(self.gif_parser.frames)}")
+            if len(self.gif_parser.frames) > 1:
+                if self.current_frame_idx == len(self.gif_parser.frames) - 1:
+                    self._clear_canvas(frame)
+                self.current_frame_idx = (self.current_frame_idx + 1) % len(self.gif_parser.frames)
+                self.root.after(delay, self.animate_gif)
+        except GifFormatError:
+            logging.error("Произошла ошибка при чтении кадра файла - файл битый")
+            return
 
-        if len(self.gif_parser.frames) > 1:
-            if self.current_frame_idx == len(self.gif_parser.frames) - 1:
-                self._clear_canvas(frame)
-            self.current_frame_idx = (self.current_frame_idx + 1) % len(self.gif_parser.frames)
-            self.root.after(delay, self.animate_gif)
 
     def _toggle_play_pause(self):
         self.is_playing = not self.is_playing
@@ -180,13 +191,19 @@ class GifGUI:
 
         for y in range(height):
             for x in range(width):
-                idx = y * width + x
-                color_idx = frame.image_data[idx]
-                if transparent_idx is not None and color_idx == transparent_idx:
-                    continue
-                rgb = color_table[color_idx]
-                color = f"#{rgb[0]:02X}{rgb[1]:02X}{rgb[2]:02X}"
-                self.base_image[top + y][left + x] = color
+                try:
+                    idx = y * width + x
+                    color_idx = frame.image_data[idx]
+                    if transparent_idx is not None and color_idx == transparent_idx:
+                        continue
+                    rgb = color_table[color_idx]
+                    color = f"#{rgb[0]:02X}{rgb[1]:02X}{rgb[2]:02X}"
+                    self.base_image[top + y][left + x] = color
+                except IndexError:
+                    messagebox.showerror("Ошибка", "Произошла ошибка при попытке доступа к кадру GIF, кажется, ваш файл битый")
+                    self.is_playing = False
+                    self.root.destroy()
+                    raise GifFormatError
 
     def _update_canvas(self):
         rows_str = ["{" + " ".join(row) + "}" for row in self.base_image]
