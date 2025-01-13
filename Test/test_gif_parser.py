@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, mock_open, patch
 from gif_parser import GifParser
+from gif_custom_errors import GifFormatError
 from gif_frame import ApplicationExtension, CommentExtension, PlainTextExtension, GraphicControlExtension
 
 
@@ -129,12 +130,12 @@ def test_parse_image_descriptor():
 
 def test_parse_local_color_table():
     mock_file = MagicMock()
-    mock_file.read.return_value = b'\x00\x00\xFF\xFF\x00\x00\x00\x00\x00'
+    mock_file.read.return_value = b'\x00\x00\xFF\xFF\x00\x00\x00\x00\x00\x00\xFF\x00'
 
-    packed = 0x87
+    packed = 0x81
     result = GifParser._parse_local_color_table(mock_file, packed)
 
-    assert result == [(0, 0, 255), (255, 0, 0), (0, 0, 0)]
+    assert result == [(0, 0, 255), (255, 0, 0), (0, 0, 0), (0, 255, 0)]
 
 
 def test_read_sub_blocks():
@@ -176,68 +177,67 @@ def test_parse_pixel_indices():
             mock_file.read.assert_called_once()
 
 
-from unittest.mock import patch
-
-
-@patch('logging.error')
-def test_parse_screen_descriptor_invalid_header(mock_logging_error):
+def test_parse_screen_descriptor_invalid_header():
     header = b'XYZ123'
     descriptor_data = b'\x10\x00\x10\x00\xF7\x00\x00'
 
     try:
         result = GifParser._parse_screen_descriptor(header, descriptor_data)
         assert False
-    except ValueError as e:
+    except GifFormatError as e:
         assert True
-        mock_logging_error.assert_called_once_with("Неверный формат файла")
+        assert e.args[0] == 'Файл не является GIF-форматом.'
 
 
-@patch('logging.error')
-def test_parse_screen_descriptor_invalid_header_length(mock_logging_error):
+def test_parse_screen_descriptor_invalid_header_length():
     header = b'GIF'
     descriptor_data = b'\x10\x00\x10\x00\xF7\x00\x00'
+    try:
+        result = GifParser._parse_screen_descriptor(header, descriptor_data)
+        assert False
+    except GifFormatError as e:
+        assert True
+        assert e.args[0] == 'Неверная длина заголовка.'
 
-    result = GifParser._parse_screen_descriptor(header, descriptor_data)
 
-    assert result is None
-    mock_logging_error.assert_called_once_with("Неверная длина заголовка")
-
-
-@patch('logging.error')
-def test_parse_screen_descriptor_invalid_descriptor_length(mock_logging_error):
+def test_parse_screen_descriptor_invalid_descriptor_length():
     header = b'GIF89a'
     descriptor_data = b'\x10\x00'
+    try:
+        result = GifParser._parse_screen_descriptor(header, descriptor_data)
+        assert False
+    except GifFormatError as e:
+        assert True
+        assert e.args[0] == 'Неверная длина логического дескриптора экрана.'
 
-    result = GifParser._parse_screen_descriptor(header, descriptor_data)
 
-    assert result is None
-    mock_logging_error.assert_called_once_with("Неверна длина логического дескриптора экрана")
-
-
-@patch('logging.error')
-def test_parse_image_descriptor_fail(mock_logging_error):
+def test_parse_image_descriptor_fail():
     mock_file = MagicMock()
     mock_file.read.return_value = b'\x01\x00\x02\x00\x10\x00\x10\x00'
+    try:
+        result = GifParser._parse_image_descriptor(mock_file)
+        assert False
+    except GifFormatError as e:
+        assert True
+        assert e.args[0] == 'Неверная длина дескриптора изображения.'
 
-    result = GifParser._parse_image_descriptor(mock_file)
 
-    assert result is None
-    mock_logging_error.assert_called_once_with("Неверная длина дескриптора изображения")
-
-
-@patch('logging.error')
-def test_parse_graphic_control_extension_fail(mock_logging_error):
+def test_parse_graphic_control_extension_fail():
     mock_data = b'\x09\x00\x10'
-    result = GifParser._parse_graphic_control_extension(mock_data)
+    try:
+        result = GifParser._parse_graphic_control_extension(mock_data)
+        assert False
+    except GifFormatError as e:
+        assert True
+        assert e.args[0] == 'Неверная длина расширения графики.'
 
-    assert result is None
-    mock_logging_error.assert_called_once_with("Неверная длина расширения графики")
 
-@patch('logging.error')
-def test_parse_plain_text_extension_fail(mock_logging_error):
+def test_parse_plain_text_extension_fail():
     header_data = b'\x00\x00\x00\x00\x10\x00\x10\x00\x01\x01\x02'
     text_data = b'Test Plain Text'
-    result = GifParser._parse_plain_text_extension(header_data, text_data)
-
-    assert result is None
-    mock_logging_error.assert_called_once_with("Неверная длина расширения простого текста")
+    try:
+        result = GifParser._parse_plain_text_extension(header_data, text_data)
+        assert False
+    except GifFormatError as e:
+        assert True
+        assert e.args[0] == 'Неверная длина расширения простого текста.'
