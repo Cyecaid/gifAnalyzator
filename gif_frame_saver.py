@@ -26,18 +26,21 @@ class GifFrameSaver:
                                     (0, 0, 0, 0))
 
         max_index = len(self.gif_parser.frames) - 1
-        invalid_indices = []
 
         for idx in range(len(self.gif_parser.frames)):
-            frame = self.gif_parser.frames[idx]
-            self._update_full_image(frame)
+            try:
+                frame = self.gif_parser.frames[idx]
+                self._update_full_image(frame)
 
-            if idx in frame_indices:
-                self._save_frame_as_png(idx, save_path)
+                if idx in frame_indices:
+                    self._save_frame_as_png(idx, save_path)
 
-        invalid_indices = [idx + 1 for idx in frame_indices if idx > max_index or idx < 0]
-        if invalid_indices:
-            logging.warning(f"Часть кадров не были сохранены, так как номер кадра был больше, чем их количество: {invalid_indices}")
+                invalid_indices = [idx + 1 for idx in frame_indices if idx > max_index or idx < 0]
+                if invalid_indices:
+                    logging.warning(f"Часть кадров не были сохранены, так как номер кадра был больше, чем их количество: {invalid_indices}")
+            except IndexError:
+                logging.error("Во время скачивания произошла ошибка из-за неверного кадра - файл битый")
+                return
 
     @staticmethod
     def _parse_frame_indices(indices):
@@ -95,7 +98,7 @@ class GifFrameSaver:
 
             self.full_image.paste(frame_image, (left, top), frame_image)
         except IndexError:
-            logging.error("Во время скачивания произошла ошибка из-за неверного кадра - файл битый")
+            raise
 
     def _save_frame_as_png(self, frame_idx, save_path):
         filename = os.path.join(save_path, f"frame_{frame_idx + 1:03d}.png")
