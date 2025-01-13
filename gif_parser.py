@@ -79,8 +79,10 @@ class GifParser:
 
         if signature != 'GIF':
             raise GifFormatError("Файл не является GIF-форматом.")
-
-        width, height, packed, bg_color_index, aspect_ratio = struct.unpack("<HHBBB", descriptor_data)
+        try:
+            width, height, packed, bg_color_index, aspect_ratio = struct.unpack("<HHBBB", descriptor_data)
+        except struct.error:
+            raise GifFormatError("Дескриптор изображения невозможно расшифровать - файл битый")
         return FileDescription(signature, version, width, height, packed, bg_color_index, aspect_ratio)
 
     @staticmethod
@@ -125,8 +127,10 @@ class GifParser:
         descriptor_data = file.read(9)
         if len(descriptor_data) != 9:
             raise GifFormatError("Неверная длина дескриптора изображения.")
-
-        left, top, width, height, packed = struct.unpack("<HHHHB", descriptor_data)
+        try:
+            left, top, width, height, packed = struct.unpack("<HHHHB", descriptor_data)
+        except:
+            raise GifFormatError("Заголовок дескриптора изображения невозможно расшифровать - файл битый")
         return left, top, width, height, packed
 
     @staticmethod
@@ -153,7 +157,10 @@ class GifParser:
     def _parse_graphic_control_extension(data):
         if len(data) != 4:
             raise GifFormatError("Неверная длина расширения графики.")
-        packed, delay_low, delay_high, transparent_color_index = struct.unpack('<BBBB', data)
+        try:
+            packed, delay_low, delay_high, transparent_color_index = struct.unpack('<BBBB', data)
+        except struct.error:
+            raise GifFormatError("Заголовок расширения графики невозможно расшифровать - файл битый")
 
         disposal_method = (packed & 0x1C) >> 2
         user_input_flag = (packed & 0x02) >> 1
@@ -167,8 +174,10 @@ class GifParser:
     def _parse_plain_text_extension(header_data, text_data):
         if len(header_data) != 12:
             raise GifFormatError("Неверная длина расширения простого текста.")
-
-        left, top, width, height, cell_width, cell_height, fg_color_index, bg_color_index = struct.unpack("<HHHHBBBB", header_data)
+        try:
+            left, top, width, height, cell_width, cell_height, fg_color_index, bg_color_index = struct.unpack("<HHHHBBBB", header_data)
+        except struct.error:
+            raise GifFormatError("Заголовок расширения простого текста невозможно расшифровать - файл битый")
         text_content = text_data.decode('ascii', errors='replace')
         return PlainTextExtension(left, top, width, height, cell_width, cell_height, fg_color_index, bg_color_index, text_content)
 
