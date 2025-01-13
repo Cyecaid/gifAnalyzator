@@ -99,7 +99,6 @@ class GifGUI:
             logging.error("Произошла ошибка при чтении кадра файла - файл битый")
             return
 
-
     def _toggle_play_pause(self):
         self.is_playing = not self.is_playing
         self.play_pause_btn.configure(text="Пауза" if self.is_playing else "Старт")
